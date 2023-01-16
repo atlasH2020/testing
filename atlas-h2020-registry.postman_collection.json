@@ -82,7 +82,11 @@
 					"listen": "test",
 					"script": {
 						"exec": [
-							""
+							"var res = JSON.parse(responseBody);",
+							"if (res.oauth2_auth_url) {",
+							"  pm.collectionVariables.set(\"oauth2_auth_url\", res.oauth2_auth_url);",
+							"  pm.collectionVariables.set(\"oauth2_token_url\", res.oauth2_token_url);",
+							"}"
 						],
 						"type": "text/javascript"
 					}
@@ -101,26 +105,6 @@
 						"services",
 						"{{service_name}}",
 						"pairing"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "get auth pairing status",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{registry_url}}/api/services/{{service_name}}/pairings",
-					"host": [
-						"{{registry_url}}"
-					],
-					"path": [
-						"api",
-						"services",
-						"{{service_name}}",
-						"pairings"
 					]
 				}
 			},
@@ -165,7 +149,7 @@
 			"response": []
 		},
 		{
-			"name": "obtain registry token",
+			"name": "obtain participant registry token",
 			"event": [
 				{
 					"listen": "test",
@@ -173,7 +157,7 @@
 						"exec": [
 							"var res = JSON.parse(responseBody)",
 							"if (res.access_token) {",
-							"    pm.collectionVariables.set(\"registry_token\", res.access_token);",
+							"    pm.collectionVariables.set(\"registry_participant_token\", res.access_token);",
 							"}"
 						],
 						"type": "text/javascript"
@@ -233,6 +217,138 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "obtain service token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var res = JSON.parse(responseBody)",
+							"if (res.access_token) {",
+							"    pm.collectionVariables.set(\"service_refresh_token\", res.refresh_token);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "oauth2",
+					"oauth2": [
+						{
+							"key": "redirect_uri",
+							"value": "https://staging.atlas.agricircle.com/api/h2020/test",
+							"type": "string"
+						},
+						{
+							"key": "scope",
+							"value": "",
+							"type": "string"
+						},
+						{
+							"key": "clientSecret",
+							"value": "{{atlas_my_client_secret}}",
+							"type": "string"
+						},
+						{
+							"key": "clientId",
+							"value": "{{atlas_my_client_id}}",
+							"type": "string"
+						},
+						{
+							"key": "accessTokenUrl",
+							"value": "{{oauth2_token_url}}",
+							"type": "string"
+						},
+						{
+							"key": "authUrl",
+							"value": "{{oauth2_auth_url}}",
+							"type": "string"
+						},
+						{
+							"key": "tokenName",
+							"value": "service-token",
+							"type": "string"
+						},
+						{
+							"key": "client_authentication",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "grant_type",
+							"value": "authorization_code",
+							"type": "string"
+						},
+						{
+							"key": "useBrowser",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "state",
+							"value": "",
+							"type": "string"
+						},
+						{
+							"key": "tokenType",
+							"value": "bearer",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "refresh_token",
+							"type": "text"
+						},
+						{
+							"key": "refresh_token",
+							"value": "{{service_refresh_token}}",
+							"type": "default"
+						},
+						{
+							"key": "client_id",
+							"value": "{{atlas_my_client_id}}",
+							"type": "default"
+						},
+						{
+							"key": "client_secret",
+							"value": "{{atlas_my_client_secret}}",
+							"type": "default"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{oauth2_token_url}}",
+					"host": [
+						"{{oauth2_token_url}}"
+					]
+				}
+			},
+			"response": []
 		}
 	],
 	"auth": {
@@ -240,7 +356,7 @@
 		"bearer": [
 			{
 				"key": "token",
-				"value": "{{registry_token}}",
+				"value": "{{registry_participant_token}}",
 				"type": "string"
 			}
 		]
@@ -277,9 +393,28 @@
 			"type": "default"
 		},
 		{
-			"key": "registry_token",
+			"key": "participant_token",
 			"value": "",
 			"type": "default"
+		},
+		{
+			"key": "oauth2_auth_url",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "oauth2_token_url",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "service_refresh_token",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "registry_participant_token",
+			"value": ""
 		}
 	]
 }
